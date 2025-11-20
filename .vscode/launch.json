@@ -1,0 +1,18 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Launch Magazinus222",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/magazinus222.exe",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": true,
+            "MIMode": "gdb",
+            "preLaunchTask": "build Magazinus222"
+        }
+    ]
+}

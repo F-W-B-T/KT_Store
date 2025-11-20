@@ -1,0 +1,22 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "type": "shell",
+            "label": "build Magazinus222",
+            "command": "g++",
+            "args": [
+                "-g",
+                "-o",
+                "magazinus222.exe",
+                "main.cpp",
+                "StoreEnt.cpp"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": ["$gcc"]
+        }
+    ]
+}
