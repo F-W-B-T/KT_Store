@@ -72,6 +72,7 @@ public:
 	Prod_info* getProductInfoObj();
 	float getDimensions();
 	std::string getCategory();
+	int getQuantity() const { return quantity; }
 
 	float getPrice() const { return price; }
 	std::string getName() const { return name; }
@@ -80,20 +81,23 @@ public:
 class Shelf {
 private:
 	int shelf_id;
-	std::string number; //имя полки по сути
-	float capacity; // в контексте полки, я думаю, можно рассматривать сколько всего доступно, а currentWeight как сколько не занятого места/веса осталось 
+	std::string number;
+	float capacity;
 	float currentWeight;
-	Section* section; 
-	std::map<std::string, int> categoryQuantities; //словарь количества продуктов
+	Section* section;
+	std::map<std::string, int> categoryQuantities;
 	std::vector<Product*> products;
+
 public:
 	//============================Конструктор================================
-	Shelf(int shelf_id, std::string number, float capacity, Section* section); //Section наверное лучше по ссылке передавать 
+	Shelf(int shelf_id, std::string number, float capacity, Section* section);
 	~Shelf();
+
 	//----------------------------Доступные_Методы---------------------------
 	void addProduct(Product* product);
 	void removeProduct(Product* product);
-	void getProducts();
+	bool removeProduct(Product* product, int quantity); // перегруженная версия
+	void getProductsInfo();
 	float getFreeSpace() const { return capacity - currentWeight; }
 	float getCurrentWeight() const { return currentWeight; }
 	std::string getNumber() const { return number; }
@@ -101,10 +105,14 @@ public:
 	float getCapacity() const { return capacity; }
 	void updateWeight();
 	bool writeOffProduct(Product* product);
+	int getProductCountByType(std::string category);
+	const std::vector<Product*>& getProducts() const { return products; }
 
-	int getProductCountByType(std::string categody);
-	const std::vector<Product*>& getProd() const { return products; } // геттер
-	
+	// Новые методы для работы с сигналами
+	void setupSignalConnections();
+	void onProductAddedToCheck(Product* product, int quantity);
+	bool containsProduct(Product* product) const;
+	int getProductQuantity(Product* product) const;
 
 	//операторы сравнения для полки по свободному местоу
 	bool operator==(const Shelf& other) const { return getFreeSpace() == other.getFreeSpace(); }
@@ -112,60 +120,73 @@ public:
 	bool operator>(const Shelf& other) const { return getFreeSpace() > other.getFreeSpace(); }
 };
 
-class Section { //для секции думаю можно добавить текущуюю заполненость чтобы постоянно не вызывать функцию calculateCurrentLoad();
+class Section {
 private:
 	int section_id;
 	std::string name;
 	float capacity;
-	float currentLoad; 
-	std::map<std::string, int> categoryQuantities; //словарь полок
-	std::vector<Shelf*> shelves; // конкретные полки
+	float currentLoad;
+	std::map<std::string, int> categoryQuantities;
+	std::vector<Shelf*> shelves;
 	Warehouse* warehouse;
+
 public:
 	//============================Конструктор================================
 	Section(int section_id, std::string name, float capacity, Warehouse* warehouse);
 	~Section();
+
 	//----------------------------Доступные_Методы---------------------------
 	void addShelf(std::string name, float capacity);
 	void removeShelf(Shelf* shelf);
 	void getShelves();
 	void calculateCurrentLoad();
-
-	void updateCategoryStatistics(); // обновляет статистику по всем полкам
-	int getCategoryCount(const std::string& category); // количество товаров категории в секции
-
+	void updateCategoryStatistics();
+	int getCategoryCount(const std::string& category);
 	bool hasFreeSpace() { return currentLoad < capacity; };
 	void getSectionInfo();
+
+	// Новый метод для работы с сигналами
+	bool removeProductFromShelf(Product* product, int quantity);
+
 	//======Геттреы========
 	int getSectionId() const { return section_id; }
 	std::string getName() const { return name; }
 	float getCapacity() const { return capacity; }
 	float getCurrentLoad() const { return currentLoad; }
 	const std::map<std::string, int>& getCategoryQuantities() const { return categoryQuantities; }
-	const std::vector<Shelf*>& getShelvesList() const { return shelves; } // ✅ новый метод //метод для получения чего-то
+	const std::vector<Shelf*>& getShelvesList() const { return shelves; }
 };
 
 class Warehouse {
 private:
 	int warehouse_id;
 	float totalCapacity;
-	std::vector<Section*> sections; // ветор секций
-	std::map<std::string, int> categoryQuantities; //словарь по категориям всего склада
-	void updateCapacity();// на данный момент не реализованно 
+	std::vector<Section*> sections;
+	std::map<std::string, int> categoryQuantities;
+	void updateCapacity(); // на данный момент не реализованно 
+
 public:
 	//============================Конструктор/Деструктор================================
-	Warehouse(int werehouse_id, float totalCapacity);
+	Warehouse(int warehouse_id, float totalCapacity);
 	~Warehouse();
+
 	//----------------------------Доступные_Методы---------------------------
 	void addSection(std::string name, float capacity);
 	void removeSection(Section* section);
-	void getSections();// на данный момент не реализованно 
+	void getSections(); // на данный момент не реализованно 
 	float getTotalLoad();
 	float getFreeSpace() { return totalCapacity - getTotalLoad(); };
+	void updateGlobalCategoryStatistics();
+	int getGlobalCategoryCount(const std::string& category);
 
-	void updateGlobalCategoryStatistics(); // обновляет статистику по всему складу
-	int getGlobalCategoryCount(const std::string& category); // количество товаров категории на всем складе
+	// Новые методы для работы с сигналами
+	void setupSignalConnections();
+	void onProductAddedToCheck(Product* product, int quantity);
+	void onProductRemovedFromCheck(Product* product, int quantity);
+	bool removeProductFromStock(Product* product, int quantity);
+	bool returnProductToStock(Product* product, int quantity);
 
+	//======Геттреы========
 	int getWarehouseId() const { return warehouse_id; }
 	float getTotalCapacity() const { return totalCapacity; }
 };
@@ -192,28 +213,36 @@ public:
 class Check {
 private:
 	const int check_id;
-	const time_t dateTime; //наверное следует прописать const для установки времени
+	const time_t dateTime;
 	float totalAmount;
-	Seller* seller;//будет позже
+	Seller* seller;
 	Customer* customer;
-	std::map<Product*, int> products;// думаю можно не делать переменную quantities для продуктов, думаю можно обойтись словарем словарей где будет указан и продукт и его количество 
-	std::string paymentMethod; //нах он нужен нам??? // бот говорит нужен :(
-	Shop* shop; //будет позже
+	std::map<Product*, int> products;
+	std::string paymentMethod;
+	Shop* shop;
+	bool isPaid; // Новое поле для отслеживания статуса оплаты
 
 public:
 	//============================Конструктор================================
 	Check(int check_id, Seller* seller, Customer* customer, Shop* shop, std::string paymentMethod);
+	~Check(); // Добавлен деструктор
+
 	//----------------------------Доступные_Методы---------------------------
 	void calculateTotal();
 	void addProduct(Product* product, int quantity);
 	void removeProduct(Product* product);
 	void applyDiscount(float discountPercent);
 	void getCheckDeteils();
-	void printCheck(); //бесполезная функция //Все еще так думаю
+	void printCheck();
 
-	time_t getDateTime() const { return dateTime; }//что это описано ниже если коротко то inline
+	// Новый метод для возврата товаров на склад
+	void returnProductsToStock();
+
+	//======Геттреы========
+	time_t getDateTime() const { return dateTime; }
 	float getTotalAmount() const { return totalAmount; }
 	int getCheckID() const { return check_id; }
+	bool getIsPaid() const { return isPaid; } // Новый геттер
 };
 
 class Seller {
@@ -241,25 +270,32 @@ class Shop {
 private:
 	int shop_id;
 	std::string name;
-	std::vector<Seller*> sellers;//массив продавцов
+	std::vector<Seller*> sellers;
 	Warehouse* warehouse;
+
 public:
 	//============================Конструктор================================
 	Shop(int shop_id, std::string name);
+
 	//----------------------------Доступные_Методы---------------------------
-	//Управление продавцом
+	// Управление продавцами
 	void addSeller(Seller* seller);
 	void removeSeller(Seller* seller);
 	void getSellers();
 
-	/* Получение общей статистики(через агрегацию)//ИИ
-	//float getTotalShopSales(); // сумма продаж всех продавцов
-	//int getTotalChecksCount(); // общее количество чеков
-	*/
+	// Управление складом
+	void setWarehouse(Warehouse* warehouse);
+	bool removeProductFromWarehouse(Product* product, int quantity);
+	void returnProductToWarehouse(Product* product, int quantity);
 
+	// Статистика и информация
 	void getShopInfo();
+	float getTotalShopSales(); // сумма продаж всех продавцов
+	int getTotalChecksCount(); // общее количество чеков
 
+	//======Геттеры========
 	int getShopId() const { return shop_id; }
 	std::string getName() const { return name; }
-	Warehouse* getWarehouse() { return warehouse; }
+	Warehouse* getWarehouse() const { return warehouse; }
+	const std::vector<Seller*>& getSellersList() const { return sellers; }
 };
