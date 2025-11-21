@@ -177,6 +177,35 @@ void Shelf::addProduct(Product* product)
 	std::string category = product->getCategory();
 	categoryQuantities[category]++;
 }
+void Shelf::addProduct(Product* product, int quantity)
+{
+    if (product == nullptr || quantity <= 0) {
+        return;
+    }
+
+    // Проверяем, достаточно ли свободного места
+    float totalNeededSpace = product->getDimensions() * quantity;
+
+    if (getFreeSpace() < totalNeededSpace) {
+        std::cout << "Недостаточно места на полке '" << number
+            << "'. Нужно: " << totalNeededSpace
+            << ", доступно: " << getFreeSpace() << std::endl;
+        return;
+    }
+
+    // Добавляем нужное количество копий
+    for (int i = 0; i < quantity; i++) {
+        products.push_back(product);
+    }
+
+    // Обновляем статистику по категориям
+    std::string category = product->getCategory();
+    categoryQuantities[category] += quantity;
+
+    // Обновляем вес полки
+    updateWeight();
+}
+
 
 // Перегруженный метод removeProduct для удаления определенного количества
 bool Shelf::removeProduct(Product* product, int quantity)

@@ -95,6 +95,7 @@ public:
 
 	//----------------------------Доступные_Методы---------------------------
 	void addProduct(Product* product);
+	void addProduct(Product* product, int quantity); // перегрузка
 	void removeProduct(Product* product);
 	bool removeProduct(Product* product, int quantity); // перегруженная версия
 	void getProductsInfo();
