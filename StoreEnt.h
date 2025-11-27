@@ -14,6 +14,26 @@ class Warehouse;
 class Seller;
 class Shop;
 class Check;
+class IDGenerator;
+
+class IDGenerator { //чтобы использовать в конструкторах, пример : product_id(IDGenerator::genProductID())
+public:
+    static void init() {
+        std::srand(std::time(nullptr));
+    }
+
+    static int genProductID()   { return std::rand(); }
+    static int genSupplierID()  { return std::rand(); }
+    static int genShelfID()     { return std::rand(); }
+    static int genSectionID()   { return std::rand(); }
+    static int genWarehouseID() { return std::rand(); }
+    static int genCustomerID()  { return std::rand(); }
+    static int genSellerID()    { return std::rand(); }
+    static int genShopID()      { return std::rand(); }
+
+    // чек тоже генератор рандомный
+    static int genCheckID()     { return std::rand(); }
+};
 
 class Prod_info {
 private:
@@ -29,7 +49,7 @@ public:
 	time_t getWarrantyDate();
 };
 
-
+//класс нужно переписать полностью!!!! по образцу prod_info так как этот класс мы используем для спец информации как и prod_info
 class Supplier {
 private:
 	int supplier_id;
@@ -57,7 +77,15 @@ private:
 	Supplier* supplier;
 public:
 	//============================Конструктор================================
-	Product(int id, std::string name, float price, int quantity, std::string category, float dimensions, std::string fabricator, int serial_num, time_t warrantydate, Supplier* supplier);
+	Product(
+		std::string name, 
+		float price, int quantity, 
+		std::string category, 
+		float dimensions, 
+		std::string fabricator, 
+		int serial_num, 
+		time_t warrantydate, 
+		Supplier* supplier);
 	//============================Деструктор================================
 	~Product();
 	//----------------------------ДоступныеМетоды---------------------------
@@ -90,7 +118,10 @@ private:
 
 public:
 	//============================Конструктор================================
-	Shelf(int shelf_id, std::string number, float capacity, Section* section);
+	Shelf(
+		std::string number, 
+		float capacity, 
+		Section* section);
 	~Shelf();
 
 	//----------------------------Доступные_Методы---------------------------
@@ -133,7 +164,11 @@ private:
 
 public:
 	//============================Конструктор================================
-	Section(int section_id, std::string name, float capacity, Warehouse* warehouse);
+	Section(
+		std::string name, 
+		float capacity, 
+		Warehouse* warehouse
+	);
 	~Section();
 
 	//----------------------------Доступные_Методы---------------------------
@@ -168,7 +203,9 @@ private:
 
 public:
 	//============================Конструктор/Деструктор================================
-	Warehouse(int warehouse_id, float totalCapacity);
+	Warehouse(
+		float totalCapacity
+	);
 	~Warehouse();
 
 	//----------------------------Доступные_Методы---------------------------
@@ -202,7 +239,7 @@ private:
 
 public:
 	//============================Конструктор================================
-	Customer(int customer_id, std::string address); //предполагается что loyaltyPoints = 0
+	Customer(std::string address); //предполагается что loyaltyPoints = 0
 	//----------------------------Доступные_Методы---------------------------
 	void updateLoyaltyPoints(int points);
 	float applyDiscount();
@@ -225,7 +262,7 @@ private:
 
 public:
 	//============================Конструктор================================
-	Check(int check_id, Seller* seller, Customer* customer, Shop* shop, std::string paymentMethod);
+	Check(Seller* seller, Customer* customer, Shop* shop, std::string paymentMethod);
 	~Check(); // Добавлен деструктор
 
 	//----------------------------Доступные_Методы---------------------------
@@ -254,7 +291,7 @@ private:
 	std::vector<Check*> salesHistory;
 public:
 	//============================Конструктор================================
-	Seller(int seller_id, std::string name, Shop* shop);
+	Seller(std::string name, Shop* shop);
 	//----------------------------Доступные_Методы---------------------------
 	Check* createCheck(Customer* customer, std::string paymentMethod);// переделал метод создания чека
 	void addToSalesHistory(Check* check);// метод для истории продаж 
@@ -276,7 +313,7 @@ private:
 
 public:
 	//============================Конструктор================================
-	Shop(int shop_id, std::string name);
+	Shop(std::string name);
 
 	//----------------------------Доступные_Методы---------------------------
 	// Управление продавцами

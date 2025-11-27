@@ -1,4 +1,6 @@
 #include <iostream>
+#include "StoreEnt.h"
+
 
 int main()
 {

@@ -44,8 +44,25 @@ std::string Supplier::getSupplierinfo()
 }
 
 //============================Product============================================
-Product::Product(int id, std::string name, float price, int quantity, std::string category, float dimensions, std::string fabricator, int serial_num, time_t warranty_date, Supplier* supplier)
-	: product_id(id), name(name), price(price), quantity(quantity), category(category), dimensions(dimensions), special_info(new Prod_info(fabricator, serial_num, warranty_date)), supplier(supplier)
+Product::Product(
+	std::string name, 
+	float price, 
+	int quantity, 
+	std::string category, 
+	float dimensions, 
+	std::string fabricator, 
+	int serial_num, 
+	time_t warranty_date, 
+	Supplier* supplier)
+	: 
+	product_id(IDGenerator::genProductID()), 
+	name(name), 
+	price(price), 
+	quantity(quantity), 
+	category(category), 
+	dimensions(dimensions), 
+	special_info(new Prod_info(fabricator, serial_num, warranty_date)), 
+	supplier(supplier)
 {
 }
 Product::~Product()
@@ -114,8 +131,12 @@ int Product::getQuantity() const {
 }
 
 //============================Shelf============================================
-Shelf::Shelf(int shelf_id, std::string number, float capacity, Section* section) :
-	shelf_id(shelf_id),
+Shelf::Shelf(
+	std::string number, 
+	float capacity, 
+	Section* section) 
+	:
+	shelf_id(IDGenerator::genShelfID()),
 	number(number),
 	capacity(capacity),
 	section(section)
@@ -345,8 +366,12 @@ int Shelf::getProductCountByType(std::string category)
 
 
 //============================Section============================================
-Section::Section(int section_id, std::string name, float capacity, Warehouse* warehouse) :
-	section_id(section_id),
+Section::Section( 
+	std::string name, 
+	float capacity, 
+	Warehouse* warehouse) 
+	:
+	section_id(IDGenerator::genShelfID()),
 	name(name),
 	capacity(capacity),
 	warehouse(warehouse)
@@ -399,7 +424,7 @@ void Section::addShelf(std::string name, float capacity)
 	}
 
 	int newShelfId = shelves.size() + 1;
-	Shelf* newShelf = new Shelf(newShelfId, name, capacity, this);
+	Shelf* newShelf = new Shelf(name, capacity, this);
 
 	shelves.push_back(newShelf);
 	updateCategoryStatistics();
@@ -524,8 +549,10 @@ void Section::getSectionInfo()
 }
 
 //============================Warehouse============================================
-Warehouse::Warehouse(int warehouse_id, float totalCapacity) :
-	warehouse_id(warehouse_id),
+Warehouse::Warehouse(
+	float totalCapacity) 
+	:
+	warehouse_id(IDGenerator::genWarehouseID()),
 	totalCapacity(totalCapacity)
 {
 	// Подключаем обработчики сигналов
@@ -597,7 +624,7 @@ void Warehouse::addSection(std::string name, float capacity)
 	}
 
 	int newSectionId = sections.size() + 1;
-	Section* newSection = new Section(newSectionId, name, capacity, this);
+	Section* newSection = new Section( name, capacity, this);
 
 	sections.push_back(newSection);
 	updateGlobalCategoryStatistics();
@@ -731,7 +758,12 @@ bool Warehouse::returnProductToStock(Product* product, int quantity)
 }
 
 //============================Customer============================================
-Customer::Customer(int customer_id, std::string address) : customer_id(customer_id), address(address), loyaltyPoints(0), discountPercent(0.0F)
+Customer::Customer(	std::string address) 
+	: 
+	customer_id(IDGenerator::genCustomerID()), 
+	address(address), 
+	loyaltyPoints(0), 
+	discountPercent(0.0F)
 {
 }
 void Customer::updateLoyaltyPoints(int points) {
@@ -761,8 +793,13 @@ std::string Customer::getCustomerInfo()
 }
 
 //============================Check============================================
-Check::Check(int check_id, Seller* seller, Customer* customer, Shop* shop, std::string paymentMethod) :
-	check_id(check_id),
+Check::Check(
+	Seller* seller, 
+	Customer* customer, 
+	Shop* shop, 
+	std::string paymentMethod) 
+	:
+	check_id(IDGenerator::genCheckID()),
 	dateTime(time(nullptr)),
 	seller(seller),
 	customer(customer),
@@ -910,8 +947,11 @@ void Check::returnProductsToStock()
 }
 
 //============================Seller============================================
-Seller::Seller(int seller_id, std::string name, Shop* shop) :
-	seller_id(seller_id),
+Seller::Seller(
+	std::string name, 
+	Shop* shop) 
+	:
+	seller_id(IDGenerator::genSellerID()),
 	name(name),
 	shop(shop){}
 Check* Seller::createCheck(Customer* customer, std::string paymentMethod)
@@ -923,10 +963,6 @@ Check* Seller::createCheck(Customer* customer, std::string paymentMethod)
 		return nullptr;
 	}
 	Check* newCheck = new Check(
-		//нужна функция для генерации ID 
-		//для Check Seller Custumer 
-		generateCheckId(), // НЕТ РЕАЛИЗАЦИИ!!!!!!
-		//time(nullptr), //нужно переделать конструктор чека
 		this, //тут поле указателя продавца // указываем текущего продавца
 		customer,
 		shop,
@@ -982,8 +1018,8 @@ int Seller::generateCheckId()
 }
 
 //============================Shop============================================
-Shop::Shop(int shop_id, std::string name) :
-	shop_id(shop_id),
+Shop::Shop(std::string name) :
+	shop_id(IDGenerator::genShopID()),
 	name(name),
 	warehouse(nullptr) {}
 
@@ -1064,4 +1100,3 @@ void Shop::getShopInfo()
 		std::cout << "Склад: нет" << std::endl;
 	}
 }
-
