@@ -29,15 +29,13 @@ address(addres)
 //============================Product============================================
 Product::Product(
 	std::string name, 
-	float price, 
-	int quantity, 
+	float price,	int quantity, 
 	std::string category, 
 	float dimensions, 
 	std::string fabricator, 
 	int serial_num, 
 	time_t warranty_date, 
-	SupplierInfo* manufacturer,
-	std::string address)
+	SupplierInfo* manufacturer)
 	: 
 	product_id(IDGenerator::genProductID()), 
 	name(name), 
@@ -46,7 +44,7 @@ Product::Product(
 	category(category), 
 	dimensions(dimensions), 
 	special_info(new Prod_info(fabricator, serial_num, warranty_date)), 
-	manufacturer(new SupplierInfo(name, address))
+	manufacturer(manufacturer)
 {
 }
 Product::~Product()

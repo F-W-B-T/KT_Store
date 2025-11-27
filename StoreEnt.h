@@ -56,7 +56,7 @@ private:
 	std::string address;
 public:
 	//============================Конструктор================================
-	SupplierInfo(std::string name, std::string addres);
+	SupplierInfo(std::string name, std::string address);
 	//----------------------------Доступные_Методы---------------------------
 	std::string getName() const { return name; }
     std::string getAddress() const { return address; }
@@ -82,8 +82,7 @@ public:
 		std::string fabricator, 
 		int serial_num, 
 		time_t warrantydate, 
-		SupplierInfo* manufacturer,
-		std::string address
+		SupplierInfo* manufacturer
 	);
 	//============================Деструктор================================
 	~Product();
