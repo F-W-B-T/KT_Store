@@ -19,28 +19,11 @@ time_t Prod_info::getWarrantyDate()
 }
 
 //============================Supplier============================================
-Supplier::Supplier(int id, std::string name, std::string addres) : supplier_id(id), name(name), address(addres)
+SupplierInfo::SupplierInfo( std::string name, std::string addres) 
+: 
+name(name), 
+address(addres)
 {
-}
-void Supplier::addProduct(Product* product)
-{
-	products.push_back(product);
-}
-
-std::vector<Product*> Supplier::getProducts()
-{
-	return products;
-}
-
-std::string Supplier::getSupplierinfo()
-{
-	std::stringstream ss;
-	ss << "Supplier ID: " << supplier_id
-		<< ", Name: " << name
-		<< ", Address: " << address
-		<< ", Products: " << products.size();
-	return ss.str();
-	//Пример вывода строки: "Supplier ID: 1, Name: ABC Suppliers, Address: 123 Main St, Products: 5"
 }
 
 //============================Product============================================
@@ -53,7 +36,8 @@ Product::Product(
 	std::string fabricator, 
 	int serial_num, 
 	time_t warranty_date, 
-	Supplier* supplier)
+	SupplierInfo* manufacturer,
+	std::string address)
 	: 
 	product_id(IDGenerator::genProductID()), 
 	name(name), 
@@ -62,7 +46,7 @@ Product::Product(
 	category(category), 
 	dimensions(dimensions), 
 	special_info(new Prod_info(fabricator, serial_num, warranty_date)), 
-	supplier(supplier)
+	manufacturer(new SupplierInfo(name, address))
 {
 }
 Product::~Product()
@@ -107,9 +91,9 @@ std::string Product::getProd_Info()
 	return ss.str();
 }
 
-Supplier* Product::getSupplier()
+SupplierInfo* Product::getSupplier()
 {
-	return supplier;
+	return manufacturer;
 }
 
 Prod_info* Product::getProductInfoObj()

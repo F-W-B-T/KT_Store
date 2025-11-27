@@ -50,19 +50,16 @@ public:
 };
 
 //класс нужно переписать полностью!!!! по образцу prod_info так как этот класс мы используем для спец информации как и prod_info
-class Supplier {
+class SupplierInfo {
 private:
-	int supplier_id;
 	std::string name;
 	std::string address;
-	std::vector<Product*> products; // Товары этого поставщика
 public:
 	//============================Конструктор================================
-	Supplier(int id, std::string name, std::string addres);
+	SupplierInfo(std::string name, std::string addres);
 	//----------------------------Доступные_Методы---------------------------
-	void addProduct(Product* product);          //метод добавляет товар в список товаров постовщика
-	std::vector<Product*> getProducts();
-	std::string getSupplierinfo(); 				//метод форматирует инфу о поставщике в строкy
+	std::string getName() const { return name; }
+    std::string getAddress() const { return address; }
 };
 
 class Product {
@@ -74,7 +71,7 @@ private:
 	std::string category;
 	float dimensions;
 	Prod_info* special_info;
-	Supplier* supplier;
+	SupplierInfo* manufacturer;
 public:
 	//============================Конструктор================================
 	Product(
@@ -85,7 +82,9 @@ public:
 		std::string fabricator, 
 		int serial_num, 
 		time_t warrantydate, 
-		Supplier* supplier);
+		SupplierInfo* manufacturer,
+		std::string address
+	);
 	//============================Деструктор================================
 	~Product();
 	//----------------------------ДоступныеМетоды---------------------------
@@ -96,7 +95,7 @@ public:
 	bool isUnderWarranty();
 
 	std::string getProd_Info();
-	Supplier* getSupplier();
+	SupplierInfo* getSupplier();
 	Prod_info* getProductInfoObj();
 	float getDimensions();
 	std::string getCategory();
