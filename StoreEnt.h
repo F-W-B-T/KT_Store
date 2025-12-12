@@ -225,6 +225,7 @@ public:
 	//======Геттреы========
 	int getWarehouseId() const { return warehouse_id; }
 	float getTotalCapacity() const { return totalCapacity; }
+	const std::vector<Section*>& getSectionsList() const { return sections; }
 };
 
 

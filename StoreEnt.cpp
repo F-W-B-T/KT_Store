@@ -108,9 +108,9 @@ std::string Product::getCategory()
 {
 	return category;
 }
-int Product::getQuantity() const {
-	return quantity;
-}
+//int Product::getQuantity() const {
+//	return quantity;
+//}
 
 //============================Shelf============================================
 Shelf::Shelf(
@@ -270,9 +270,9 @@ int Shelf::getProductQuantity(Product* product) const
 }
 
 // Геттер для продуктов
-const std::vector<Product*>& Shelf::getProducts() const {
-	return products;
-}
+//const std::vector<Product*>& Shelf::getProducts() const {
+//	return products;
+//}
 
 void Shelf::getProductsInfo()
 {
@@ -636,6 +636,27 @@ void Warehouse::removeSection(Section* section)
 	sections.erase(it);
 	delete section;
 	updateGlobalCategoryStatistics();
+}
+
+void Warehouse::getSections()
+{
+    std::cout << "=== СЕКЦИИ СКЛАДА ===" << std::endl;
+
+    if (sections.empty()) {
+        std::cout << "Склад пуст (нет секций)" << std::endl;
+        return;
+    }
+
+    for (int i = 0; i < sections.size(); i++) {
+        Section* sec = sections[i];
+        if (sec != nullptr) {
+            std::cout << i + 1 << ". " << sec->getName()
+                      << " | ID: " << sec->getSectionId()
+                      << " | Вместимость: " << sec->getCapacity()
+                      << " | Текущая загрузка: " << sec->getCurrentLoad()
+                      << std::endl;
+        }
+    }
 }
 
 float Warehouse::getTotalLoad()
@@ -1020,9 +1041,9 @@ void Shop::returnProductToWarehouse(Product* product, int quantity) {
 	}
 }
 
-Warehouse* Shop::getWarehouse() const {
-	return warehouse;
-}
+//Warehouse* Shop::getWarehouse() const {
+//	return warehouse;
+//}
 
 void Shop::setWarehouse(Warehouse* wh) {
 	warehouse = wh;
