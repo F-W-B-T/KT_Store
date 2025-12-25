@@ -5,9 +5,9 @@
             "name": "Debug Server",
             "type": "cppvsdbg",
             "request": "launch",
-            "program": "${workspaceFolder}\\main.exe",
+            "program": "${workspaceFolder}\\Store_server\\main.exe",
             "preLaunchTask": "build-msvc",
-            "cwd": "${workspaceFolder}",
+            "cwd": "${workspaceFolder}\\Store_server",
             "console": "integratedTerminal"
         }
     ]

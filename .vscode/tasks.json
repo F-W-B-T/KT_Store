@@ -5,7 +5,15 @@
             "label": "build-msvc",
             "type": "shell",
             "command": "cl.exe",
-            "args": ["/EHsc", "main.cpp", "StoreEnt.cpp", "ws2_32.lib"],
+            "args": [
+                "/EHsc",
+                "main.cpp",
+                "StoreEnt.cpp",
+                "ws2_32.lib"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/Store_server"
+            },
             "group": { "kind": "build", "isDefault": true },
             "problemMatcher": ["$msCompile"]
         }
