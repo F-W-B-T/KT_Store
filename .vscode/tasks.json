@@ -3,17 +3,10 @@
     "tasks": [
         {
             "label": "build-msvc",
-            "command": "cl.exe",
-            "args": [
-                "/EHsc",
-                "main.cpp",
-                "StoreEnt.cpp"
-            ],
             "type": "shell",
-            "group": {
-                "kind": "build",
-                "isDefault": true
-            },
+            "command": "cl.exe",
+            "args": ["/EHsc", "main.cpp", "StoreEnt.cpp", "ws2_32.lib"],
+            "group": { "kind": "build", "isDefault": true },
             "problemMatcher": ["$msCompile"]
         }
     ]

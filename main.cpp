@@ -1,16 +1,96 @@
-#include <windows.h>
-
 #include <iostream>
 #include <string>
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#include <windows.h>
 #include "StoreEnt.h"
+
+#pragma comment(lib, "ws2_32.lib")
 
 using namespace std;
 
 int main()
 {
-    SetConsoleOutputCP(65001);
     setlocale(LC_ALL, ".UTF8");
+    SetConsoleOutputCP(65001);
 
+    //setlocale(LC_ALL, "rus");
+    //SetConsoleOutputCP(65001);
+    //SetConsoleCP(65001);
+
+    WSADATA wsaData;
+    if (WSAStartup(MAKEWORD(2,2),&wsaData)!=0){
+        cout<< "Ошибка инициализации Winsock\n";
+        return 1;
+    } 
+
+    SOCKET serverSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    if(serverSocket == INVALID_SOCKET){
+        cout << "Ошибка создания сокета\n";
+        WSACleanup();
+        return 1;
+    }
+
+    // Настройка адреса
+    sockaddr_in serverAddr{};
+    serverAddr.sin_family = AF_INET;
+    serverAddr.sin_port = htons(54000);     // порт
+    serverAddr.sin_addr.s_addr = INADDR_ANY; // любой IP
+
+    // bind
+    if (bind(serverSocket, (sockaddr*)&serverAddr, sizeof(serverAddr)) == SOCKET_ERROR)
+    {
+        cout << "Ошибка bind\n";
+        closesocket(serverSocket);
+        WSACleanup();
+        return 1;
+    }
+
+    // listen
+    if (listen(serverSocket, SOMAXCONN) == SOCKET_ERROR)
+    {
+        cout << "Ошибка listen\n";
+        closesocket(serverSocket);
+        WSACleanup();
+        return 1;
+    }
+
+    cout << "TCP сервер запущен. Ожидание клиента...\n";
+
+    // accept (надо будет с ним что-то сделать)
+    sockaddr_in clientAddr;
+    int clientSize = sizeof(clientAddr);
+    SOCKET clientSocket = accept(serverSocket, (sockaddr*)&clientAddr, &clientSize);
+
+    if (clientSocket == INVALID_SOCKET)
+    {
+        cout << "Ошибка accept\n";
+        closesocket(serverSocket);
+        WSACleanup();
+        return 1;
+    }
+
+    cout << "Клиент подключился\n";
+
+    // Прием данных
+    char buffer[512];
+    int bytesReceived = recv(clientSocket, buffer, sizeof(buffer), 0);
+    if (bytesReceived > 0)
+    {
+        buffer[bytesReceived] = '\0';
+        cout << "Получено: " << buffer << endl;
+        send(clientSocket, buffer, bytesReceived, 0); // echo
+    }
+
+    // Закрытие
+    closesocket(clientSocket);
+    closesocket(serverSocket);
+    WSACleanup();
+return 0;
+}
+
+
+  /*  
 
     // ===================== ИНИЦИАЛИЗАЦИЯ СИСТЕМЫ =====================
 
@@ -119,6 +199,5 @@ int main()
             cout << "Неверный ввод!" << endl;
         }
     }
-
-    return 0;
-}
+*/
+    
