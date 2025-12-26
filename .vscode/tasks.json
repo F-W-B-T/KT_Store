@@ -16,6 +16,17 @@
             },
             "group": { "kind": "build", "isDefault": true },
             "problemMatcher": ["$msCompile"]
+        },
+        {
+            "label": "build-client",
+            "type": "shell",
+            "command": "cl.exe",
+            "args": ["/EHsc", "main.cpp", "ws2_32.lib"],
+            "options": {
+                "cwd": "${workspaceFolder}/Client_App"
+            },
+            "group": "build",
+            "problemMatcher": ["$msCompile"]
         }
     ]
 }

@@ -9,6 +9,15 @@
             "preLaunchTask": "build-msvc",
             "cwd": "${workspaceFolder}\\Store_server",
             "console": "integratedTerminal"
+        },
+        {
+            "name": "Debug Client",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/Client_App/main.exe",
+            "preLaunchTask": "build-client",
+            "cwd": "${workspaceFolder}/Client_App",
+            "console": "integratedTerminal"
         }
     ]
 }
