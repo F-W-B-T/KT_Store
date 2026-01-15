@@ -346,6 +346,16 @@ int Shelf::getProductCountByType(std::string category)
 	return 0;
 }
 
+void Shelf::countCategories()
+{
+	categoryQuantities.clear();//очищаем текущюю 
+
+	for( const auto& i : products ){
+		if (i){
+			categoryQuantities[i->getCategory()]++;
+		}
+	}
+}
 
 //============================Section============================================
 Section::Section( 
@@ -471,19 +481,24 @@ void Section::calculateCurrentLoad()
 
 void Section::updateCategoryStatistics()
 {
-	categoryQuantities.clear();
-
-	for (Shelf* shelf : shelves) {
-		if (shelf != nullptr) {
-			const auto& shelfProducts = shelf->getProducts();
-			for (Product* product : shelfProducts) {
-				if (product != nullptr) {
-					std::string category = product->getCategory();
-					categoryQuantities[category]++;
-				}
-			}
-		}
-	}
+    categoryQuantities.clear();
+    
+    for (Shelf* shelf : shelves) {
+        if (shelf != nullptr) {
+            // ОБНОВЛЯЕМ статистику на полке (на всякий случай)
+            shelf->countCategories();
+            
+            // Получаем готовую статистику по категориям из полки
+            const std::map<std::string, int>& shelfCategories = shelf->getCategories();
+            
+            // Суммируем статистику из полки в общую статистику секции
+            for (const auto& categoryPair : shelfCategories) {
+                const std::string& category = categoryPair.first;
+                int quantity = categoryPair.second;
+                categoryQuantities[category] += quantity;
+            }
+        }
+    }
 }
 
 int Section::getCategoryCount(const std::string& category)

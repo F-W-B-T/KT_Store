@@ -1,5 +1,6 @@
 #include <winsock2.h>
 #include <ws2tcpip.h>
+#include <windows.h>
 #include <iostream>
 #include <string>
 
@@ -10,94 +11,88 @@
 
 using namespace std;
 
-void ServerStartUp(){
-WSADATA wsaData;
-    if (WSAStartup(MAKEWORD(2,2), &wsaData) != 0) {
-        cout << "Ошибка инициализации Winsock\n";
-    }
 
-    // Создание сокета
-    SOCKET clientSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-    if (clientSocket == INVALID_SOCKET) {
-        cout << "Ошибка создания сокета\n";
-        WSACleanup();
-    }
+// Глобальный сокет клиента
+SOCKET clientSocket = INVALID_SOCKET;
 
-    // Настройка адреса сервера
-    sockaddr_in serverAddr{};
-    serverAddr.sin_family = AF_INET;
-    serverAddr.sin_port = htons(54000); // порт сервера
-    inet_pton(AF_INET, "127.0.0.1", &serverAddr.sin_addr); // локальный сервер
-
-    // Подключение к серверу
-    if (connect(clientSocket, (sockaddr*)&serverAddr, sizeof(serverAddr)) == SOCKET_ERROR) {
-        cout << "Не удалось подключиться к серверу\n";
-        closesocket(clientSocket);
-        WSACleanup();
-    }
-
-    cout << "Подключено к серверу!\n";
-}
-
-void SentMessege(string messege){
-     send(clientSocket, message.c_str(), (int)message.size(), 0);
-}
-
-char Response(){}
-
-void ServerClose(){
-
-}
-
-int main() {
-   setlocale(LC_ALL, ".UTF8");
-    SetConsoleOutputCP(65001);
-//ServerStartUp
+bool ServerConnect(const string& ip, int port)
+{
     WSADATA wsaData;
-    if (WSAStartup(MAKEWORD(2,2), &wsaData) != 0) {
+    if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0)
+    {
         cout << "Ошибка инициализации Winsock\n";
-        return 1;
+        return false;
     }
-//ServerStartU
-    // Создание сокета
-    SOCKET clientSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-    if (clientSocket == INVALID_SOCKET) {
+
+    clientSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    if (clientSocket == INVALID_SOCKET)
+    {
         cout << "Ошибка создания сокета\n";
         WSACleanup();
-        return 1;
+        return false;
     }
-//ServerStartUp
-    // Настройка адреса сервера
+
     sockaddr_in serverAddr{};
     serverAddr.sin_family = AF_INET;
-    serverAddr.sin_port = htons(54000); // порт сервера
-    inet_pton(AF_INET, "127.0.0.1", &serverAddr.sin_addr); // локальный сервер
-//ServerStartUp
-    // Подключение к серверу
-    if (connect(clientSocket, (sockaddr*)&serverAddr, sizeof(serverAddr)) == SOCKET_ERROR) {
+    serverAddr.sin_port = htons(port);
+    inet_pton(AF_INET, ip.c_str(), &serverAddr.sin_addr);
+
+    if (connect(clientSocket, (sockaddr*)&serverAddr, sizeof(serverAddr)) == SOCKET_ERROR)
+    {
         cout << "Не удалось подключиться к серверу\n";
         closesocket(clientSocket);
         WSACleanup();
-        return 1;
+        return false;
     }
-//ServerStartUp
-    cout << "Подключено к серверу!\n";
-//sentmessege
-    // Отправка сообщения
-    string message = "Привет, сервер!";
-    send(clientSocket, message.c_str(), (int)message.size(), 0);
-//response
-    // Прием ответа
+
+    cout << "Подключено к серверу\n";
+    return true;
+}
+
+bool SendMessage(const string& message)
+{
+    if (clientSocket == INVALID_SOCKET)
+        return false;
+
+    int result = send(clientSocket, message.c_str(), (int)message.size(), 0);
+    return result != SOCKET_ERROR;
+}
+
+string ReceiveResponse()
+{
     char buffer[512];
     int bytesReceived = recv(clientSocket, buffer, sizeof(buffer) - 1, 0);
-    if (bytesReceived > 0) {
-        buffer[bytesReceived] = '\0';
-        cout << "Ответ сервера: " << buffer << endl;
-    }
-//ServerClose
-    // Закрытие
-    closesocket(clientSocket);
-    WSACleanup();
 
+    if (bytesReceived <= 0)
+        return "";
+
+    buffer[bytesReceived] = '\0';
+    return string(buffer);
+}
+
+void ServerClose()
+{
+    if (clientSocket != INVALID_SOCKET)
+    {
+        closesocket(clientSocket);
+        clientSocket = INVALID_SOCKET;
+    }
+    WSACleanup();
+}
+
+int main()
+{
+    setlocale(LC_ALL, ".UTF8");
+    SetConsoleOutputCP(65001);
+
+    if (!ServerConnect("127.0.0.1", 54000))
+        return 1;
+
+    // Пример общения
+    SendMessage("LIST");
+    string response = ReceiveResponse();
+    cout << "Ответ сервера: " << response << endl;
+
+    ServerClose();
     return 0;
 }
