@@ -7,6 +7,7 @@
 #include <ctime>
 #include <vector>//удобные массивы
 #include <map>//типо словари 
+#include <mutex>
 
 class Product;
 class Section;
@@ -72,6 +73,7 @@ private:
 	float dimensions;
 	Prod_info* special_info;
 	SupplierInfo* manufacturer;
+	std::mutex mtx;
 public:
 	//============================Конструктор================================
 	Product(
@@ -137,6 +139,9 @@ public:
 	bool writeOffProduct(Product* product);
 	int getProductCountByType(std::string category);
 	const std::vector<Product*>& getProducts() const { return products; }
+	
+	void countCategories();// подсчет всего что есть в массиве продуктов 
+	const std::map<std::string, int>& getCategories() const{ return categoryQuantities;}// вывод словоря 
 
 	// Новые методы для работы с сигналами
 	void setupSignalConnections();
@@ -197,22 +202,19 @@ private:
 	float totalCapacity;
 	std::vector<Section*> sections;
 	std::map<std::string, int> categoryQuantities;
-	void updateCapacity(); // на данный момент не реализованно 
-
 public:
 	//============================Конструктор/Деструктор================================
-	Warehouse(
-		float totalCapacity
-	);
+	Warehouse(float totalCapacity);
 	~Warehouse();
 
 	//----------------------------Доступные_Методы---------------------------
 	void addSection(std::string name, float capacity);
 	void removeSection(Section* section);
-	void getSections(); // на данный момент не реализованно 
+	void getSections(); 
 	float getTotalLoad();
 	float getFreeSpace() { return totalCapacity - getTotalLoad(); };
 	void updateGlobalCategoryStatistics();
+	const std::map<std::string, int>& getGlobalCategoryStatistics(){return categoryQuantities;}
 	int getGlobalCategoryCount(const std::string& category);
 
 	// Новые методы для работы с сигналами
