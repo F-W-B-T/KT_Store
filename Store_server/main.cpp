@@ -10,6 +10,40 @@
 
 using namespace std;
 
+Shop* g_shop = nullptr;
+
+//функции сервера:
+std::string buildCatalogResponse(Warehouse* wh)
+{
+    std::string response = "КАТАЛОГ\n";
+
+    const auto& stats = wh->getGlobalCategoryStatistics();
+
+    for (const auto& pair : stats)
+    {
+        response += pair.first + " - " + std::to_string(pair.second) + "\n";
+    }
+
+    response += "END\n";
+    return response;
+}
+
+std::string buildHelpResponse()
+{
+    std::string response;
+    response += "ДОСТУПНЫЕ КОМАНДЫ:\n";
+    response += "каталог          - показать категории товаров и количество\n";
+    response += "купить           - покупка товаров по категориям\n";
+    response += "                  формат:\n";
+    response += "                  категория количество\n";
+    response += "                  ...\n";
+    response += "                  END\n";
+    response += "помощь           - показать список команд\n";
+    response += "END\n";
+    return response;
+}
+
+
 DWORD WINAPI HandleClient(LPVOID lpParam)
 {
     SOCKET clientSocket = (SOCKET)lpParam;
@@ -30,13 +64,89 @@ DWORD WINAPI HandleClient(LPVOID lpParam)
         buffer[bytesReceived] = '\0';
         cout << "Получено от клиента: " << buffer << endl;
 
-        // echo-ответ
+        // ================== ПОМОЩЬ ==================
+        if (strcmp(buffer, "помощь") == 0){
+            std::string response = buildHelpResponse();
+            send(clientSocket, response.c_str(), response.size(), 0);
+            continue;
+        }
+
+        // ================== КАТАЛОГ ==================
+        if (strcmp(buffer, "каталог") == 0)
+        {
+            std::string response =
+                buildCatalogResponse(g_shop->getWarehouse());
+
+            send(clientSocket, response.c_str(), response.size(), 0);
+            continue;
+        }
+
+        // ================== ПОКУПКА ==================
+        if (strcmp(buffer, "купить") == 0)
+        {
+            Check* check = new Check(
+                g_shop->getSeller(),
+                nullptr,
+                g_shop,
+                "наличные"
+            );
+
+            bool error = false;
+
+            while (true)
+            {
+                int bytes = recv(clientSocket, buffer, sizeof(buffer) - 1, 0);
+                buffer[bytes] = '\0';
+
+                if (strcmp(buffer, "END") == 0)
+                    break;
+
+                std::string category;
+                int quantity;
+
+                std::stringstream ss(buffer);
+                ss >> category >> quantity;
+
+                bool ok = g_shop->getWarehouse()
+                    ->removeProductsByCategory(category, quantity, check);
+
+                if (!ok)
+                {
+                    error = true;
+                    break;
+                }
+            }
+
+            if (error)
+            {
+                check->returnProductsToStock();
+                delete check;
+
+                std::string err =
+                    "ОШИБКА: недостаточно товара\n";
+                send(clientSocket, err.c_str(), err.size(), 0);
+                continue;
+            }
+
+            check->calculateTotal();
+
+            std::ostringstream out;
+            out << "ЧЕК\n";
+            check->printCheck(); // если печатает в cout — допустимо
+
+            std::string done = "ПОКУПКА ЗАВЕРШЕНА\n";
+            send(clientSocket, done.c_str(), done.size(), 0);
+            continue;
+        }
+
+        // ================== ЭХО ==================
         send(clientSocket, buffer, bytesReceived, 0);
     }
 
     closesocket(clientSocket);
     return 0;
 }
+
 
 void RunServer()
 {
@@ -129,8 +239,87 @@ void RunServer()
     WSACleanup();
 }
 
+// Массивы данных
+static const std::vector<std::string> CATEGORIES = {
+    "телефон", "ноутбук", "клавиатура", "мышь", "монитор", 
+    "наушники", "планшет", "роутер", "флешка", "мышь"
+};
+
+static const std::vector<std::string> COMPANY_NAMES = {
+    "Samsung", "Apple", "Xiaomi", "HP", "Lenovo",
+    "Dell", "Logitech", "Asus", "Acer", "Huawei"
+};
+
+// Генерация случайных адресов для компаний
+static std::string generateRandomAddress() {
+    std::vector<std::string> cities = {"Москва", "Санкт-Петербург", "Новосибирск", "Екатеринбург", "Казань"};
+    std::vector<std::string> streets = {"ул. Ленина", "ул. Пушкина", "пр. Мира", "ул. Советская", "ул. Центральная"};
+    
+    return IDGenerator::getRandomElement(streets) + ", " + 
+           std::to_string(1 + std::rand() % 200) + ", " + 
+           IDGenerator::getRandomElement(cities);
+}
+
+// Функция создания случайных поставщиков
+static SupplierInfo* createRandomSupplier() {
+    std::string company = IDGenerator::getRandomElement(COMPANY_NAMES);
+    std::string address = generateRandomAddress();
+    return new SupplierInfo(company, address);
+}
+
+// Функция создания случайного товара
+static Product* generateRandomProductEx(
+    const std::string& specificCategory = "",
+    const std::string& specificCompany = "",
+    float minPrice = 100.0f,
+    float maxPrice = 1000.0f,
+    int minQuantity = 1,
+    int maxQuantity = 1
+) {
+    // Выбор категории: если указана конкретная, используем её, иначе случайную
+    std::string category = specificCategory.empty() ? 
+        IDGenerator::getRandomElement(CATEGORIES) : specificCategory;
+    
+    // Выбор компании: если указана конкретная, используем её, иначе случайную
+    std::string company = specificCompany.empty() ?
+        IDGenerator::getRandomElement(COMPANY_NAMES) : specificCompany;
+    
+    // Генерация уникального ID
+    static int productCounter = 0;
+    productCounter++;
+    std::string name = category + "_" + company + "_" + std::to_string(productCounter);
+    
+    // Генерация цены в заданном диапазоне
+    float price = minPrice + (std::rand() % static_cast<int>((maxPrice - minPrice) * 100)) / 100.0f;
+    
+    // Генерация количества в заданном диапазоне
+    int quantity = minQuantity + std::rand() % (maxQuantity - minQuantity + 1);
+    
+    float dimensions = IDGenerator::genDimensions();
+    std::string fabricator = company;
+    int serial_num = IDGenerator::genSerialNumber();
+    time_t warranty_date = IDGenerator::genWarrantyDate();
+    
+    SupplierInfo* manufacturer = createRandomSupplier();
+    
+    return new Product(
+        name, price, quantity, category, dimensions,
+        fabricator, serial_num, warranty_date, manufacturer
+    );
+}
+
+void initialization(){
+    g_shop = new Shop("Магазин", 100);
+
+    Seller* seller = new Seller("Яковлев Ярослав", g_shop);
+    for (int i = 0; i< 25; i++){
+        g_shop->addProductToWarehouse(generateRandomProductEx());
+    }
+}
+
 int main()
 {
+    initialization();
     RunServer();
     return 0;
 }

@@ -1,5 +1,7 @@
 #include "StoreEnt.h"
 #include "Signals.h" 
+#include <algorithm>
+
 
 //============================Prod_info============================================
 Prod_info::Prod_info(std::string fabricator, int serial_num, time_t warranty_date) : fabricator(fabricator), serial_num(serial_num), warranty_date(warranty_date)
@@ -45,8 +47,8 @@ Product::Product(
 	dimensions(dimensions), 
 	special_info(new Prod_info(fabricator, serial_num, warranty_date)), 
 	manufacturer(manufacturer)
-{
-}
+{}
+
 Product::~Product()
 {
 	delete special_info;
@@ -361,13 +363,18 @@ void Shelf::countCategories()
 Section::Section( 
 	std::string name, 
 	float capacity, 
-	Warehouse* warehouse) 
+	Warehouse* warehouse)
 	:
 	section_id(IDGenerator::genShelfID()),
 	name(name),
 	capacity(capacity),
 	warehouse(warehouse)
-{}
+{
+	for(int i = 0; i< capacity/5; i++){
+		std::string name = std::to_string(i);
+		shelves.push_back(new Shelf(name, 5, this));
+	}
+}
 
 Section::~Section()
 {
@@ -404,6 +411,23 @@ bool Section::removeProductFromShelf(Product* product, int quantity)
 	updateCategoryStatistics();
 	calculateCurrentLoad();
 	return quantity <= 0;
+}
+
+bool Section::addProductS(Product *product)
+{
+    if (product == nullptr)
+        return false;
+
+    for (size_t i = 0; i < shelves.size(); i++)
+    {
+        if (!shelves[i]->getFreeSpace() > 0 )   // полка свободна
+        {
+            shelves[i]->addProduct(product);
+            return true;
+        }
+    }
+    // все полки заняты
+    return false;
 }
 
 void Section::addShelf(std::string name, float capacity)
@@ -554,6 +578,11 @@ Warehouse::Warehouse(
 {
 	// Подключаем обработчики сигналов
 	setupSignalConnections();
+	for (int i = 0; i<(totalCapacity/20);i++){
+		std::string name = std::to_string(i);
+		sections.push_back(new Section(name, 20, this));
+	}
+
 }
 
 void Warehouse::setupSignalConnections()
@@ -773,6 +802,58 @@ bool Warehouse::returnProductToStock(Product* product, int quantity)
 	std::cout << "Товар '" << product->getName() << "' возвращен на склад в количестве " << quantity << " шт." << std::endl;
 
 	return true;
+}
+
+bool Warehouse::addProduct(Product *product)
+{
+    if (product == nullptr){
+        return false;
+	}
+	for (size_t i = 0; i < sections.size(); i++)
+    {
+        if (sections[i]->addProductS(product))
+        {
+            return true; // товар успешно добавлен
+        }
+    }
+	// все секции заполнены
+    return false;
+}
+
+bool Warehouse::removeProductsByCategory(const std::string &category, int quantity, Check *check)
+{
+    std::lock_guard<std::mutex> lock(mtx);// спросить 
+
+    int remaining = quantity;
+
+    for (Section* section : sections)
+    {
+        for (Shelf* shelf : section->getShelvesList())
+        {
+            const auto& products = shelf->getProducts();
+
+            for (Product* product : products)
+            {
+                if (product->getCategory() == category)
+                {
+                    int available = product->getQuantity();
+                    int toRemove = std::min(available, remaining);
+
+                    if (toRemove > 0)
+                    {
+                        shelf->removeProduct(product, toRemove);
+                        check->addProduct(product, toRemove);
+                        remaining -= toRemove;
+                    }
+
+                    if (remaining == 0)
+                        return true;
+                }
+            }
+        }
+    }
+
+    return false; // не хватило товара
 }
 
 //============================Customer============================================
@@ -1036,10 +1117,10 @@ int Seller::generateCheckId()
 }
 
 //============================Shop============================================
-Shop::Shop(std::string name) :
+Shop::Shop(std::string name, int WarehouseCopasity) :
 	shop_id(IDGenerator::genShopID()),
 	name(name),
-	warehouse(nullptr) {}
+	warehouse(new Warehouse(WarehouseCopasity)) {}
 
 // Метод для удаления товара со склада
 bool Shop::removeProductFromWarehouse(Product* product, int quantity) {
@@ -1062,6 +1143,12 @@ void Shop::returnProductToWarehouse(Product* product, int quantity) {
 
 void Shop::setWarehouse(Warehouse* wh) {
 	warehouse = wh;
+}
+
+bool Shop::addProductToWarehouse(Product *product)
+{
+	warehouse->addProduct(product);
+	return true;
 }
 
 void Shop::addSeller(Seller* seller)
@@ -1117,4 +1204,13 @@ void Shop::getShopInfo()
 	else {
 		std::cout << "Склад: нет" << std::endl;
 	}
+}
+
+Seller *Shop::getSeller()
+{
+    if (sellers.empty())
+        return nullptr;
+
+    int index = rand() % sellers.size();
+    return sellers[index];
 }

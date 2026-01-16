@@ -34,6 +34,28 @@ public:
 
     // чек тоже генератор рандомный
     static int genCheckID()     { return std::rand(); }
+
+	static int genSerialNumber() { return 1000000 + std::rand() % 9000000; } // 7-значный серийник
+    static float genPrice() { return 100.0f + (std::rand() % 10000) / 100.0f; } // цена от 100 до 200
+    static int genQuantity() { return 1 + std::rand() % 100; } // количество от 1 до 100
+    static float genDimensions() { return 0.1f + (std::rand() % 100) / 100.0f; } // размеры от 0.1 до 1.0
+    
+    // Генерация даты гарантии (от 0 до 3 лет от текущей даты)
+    static time_t genWarrantyDate() {
+        time_t now = std::time(nullptr);
+        int daysOffset = std::rand() % (3 * 365); // до 3 лет
+        return now + (daysOffset * 24 * 60 * 60);
+    }
+    
+    // Получение случайного элемента из массива
+    template<typename T>
+    static const T& getRandomElement(const std::vector<T>& arr) {
+        if (arr.empty()) {
+            static T defaultVal{};
+            return defaultVal;
+        }
+        return arr[std::rand() % arr.size()];
+    }
 };
 
 class Prod_info {
@@ -110,7 +132,7 @@ class Shelf {
 private:
 	int shelf_id;
 	std::string number;
-	float capacity;
+	float capacity = 5;
 	float currentWeight;
 	Section* section;
 	std::map<std::string, int> categoryQuantities;
@@ -159,7 +181,7 @@ class Section {
 private:
 	int section_id;
 	std::string name;
-	float capacity;
+	float capacity = 20;
 	float currentLoad;
 	std::map<std::string, int> categoryQuantities;
 	std::vector<Shelf*> shelves;
@@ -187,6 +209,8 @@ public:
 	// Новый метод для работы с сигналами
 	bool removeProductFromShelf(Product* product, int quantity);
 
+	bool addProductS(Product *product);
+
 	//======Геттреы========
 	int getSectionId() const { return section_id; }
 	std::string getName() const { return name; }
@@ -202,6 +226,7 @@ private:
 	float totalCapacity;
 	std::vector<Section*> sections;
 	std::map<std::string, int> categoryQuantities;
+	std::mutex mtx; // МЬЮТЕКС СКЛАДА
 public:
 	//============================Конструктор/Деструктор================================
 	Warehouse(float totalCapacity);
@@ -223,6 +248,9 @@ public:
 	void onProductRemovedFromCheck(Product* product, int quantity);
 	bool removeProductFromStock(Product* product, int quantity);
 	bool returnProductToStock(Product* product, int quantity);
+
+	bool addProduct(Product* product);
+	bool removeProductsByCategory(const std::string& category,int quantity,Check* check);
 
 	//======Геттреы========
 	int getWarehouseId() const { return warehouse_id; }
@@ -314,7 +342,7 @@ private:
 
 public:
 	//============================Конструктор================================
-	Shop(std::string name);
+	Shop(std::string name, int WarehouseCopasity);
 
 	//----------------------------Доступные_Методы---------------------------
 	// Управление продавцами
@@ -324,6 +352,7 @@ public:
 
 	// Управление складом
 	void setWarehouse(Warehouse* warehouse);
+	bool addProductToWarehouse(Product* product);
 	bool removeProductFromWarehouse(Product* product, int quantity);
 	void returnProductToWarehouse(Product* product, int quantity);
 
@@ -331,7 +360,7 @@ public:
 	void getShopInfo();
 	float getTotalShopSales(); // сумма продаж всех продавцов
 	int getTotalChecksCount(); // общее количество чеков
-
+	Seller* getSeller();
 	//======Геттеры========
 	int getShopId() const { return shop_id; }
 	std::string getName() const { return name; }
