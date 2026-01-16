@@ -312,6 +312,60 @@ public:
 	bool getIsPaid() const { return isPaid; } // Новый геттер
 };
 
+// ==================== ОДИН УНИВЕРСАЛЬНЫЙ ШАБЛОН ====================
+template <typename T>
+class Document {
+private:
+	std::string name;
+    const int document_id;
+    const time_t dateTime;
+    float totalAmount;
+    T* receiver;
+    T* sender;
+    std::map<Product*, int> products;
+    bool isPaid;
+
+	bool BoS;  //true  будет покупкой
+
+    // Дополнительные поля
+    Customer* customer;    
+	Seller* seller;        
+	std::string manufacturer;
+    std::string documentType;
+
+public:
+    
+    Document(T Recreiv, T Sender, bool BOS)
+        : 
+		document_id(genCheckID()),
+		dateTimedateTime(time(nullptr)),
+          totalAmount(0),
+          receiver(recv),
+          sender(snd),
+          isPaid(false),
+          customer(nullptr),
+          seller(nullptr),
+          documentType(""),
+          isIncoming(incoming) {}
+        
+    // Методы для всех
+    void addProduct(Product* product);
+    void removeProduct(Product* product);
+    
+    // Общая печать
+    void printDocument() {
+        if (documentType == "check") {
+            printCheckDetails();
+        } else if (documentType == "invoice") {
+            printInvoiceDetails();
+        }
+    }
+    
+private:
+    void printCheckDetails();
+    void printInvoiceDetails();
+};
+
 class Seller {
 private:
 	int seller_id;
