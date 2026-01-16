@@ -13,6 +13,30 @@ using namespace std;
 
 Shop* g_shop = nullptr;
 
+//проверка
+
+/*std::string buildCatalogResponse(Warehouse* wh)
+{
+    // ВРЕМЕННО: всегда возвращаем тестовые данные
+    std::string response = "=== КАТАЛОГ ТОВАРОВ ===\n\n";
+    
+    // Фиксированные тестовые данные
+    response += "phone - 5 шт.\n";
+    response += "laptop - 3 шт.\n";
+    response += "keyboard - 8 шт.\n";
+    response += "mouse - 6 шт.\n";
+    response += "monitor - 4 шт.\n";
+    response += "headphones - 7 шт.\n";
+    response += "tablet - 2 шт.\n";
+    response += "router - 3 шт.\n";
+    response += "flash drive - 10 шт.\n";
+    response += "webcam - 5 шт.\n";
+    
+    response += "\n=====================\nEND\n";
+    return response;
+}*/
+
+
 //функции сервера:
 std::string buildCatalogResponse(Warehouse* wh)
 {
@@ -28,7 +52,7 @@ std::string buildCatalogResponse(Warehouse* wh)
     const std::map<std::string, int>& stats = wh->getGlobalCategoryStatistics();
     
     std::cout << "DEBUG: Размер stats: " << stats.size() << std::endl;
-    
+    //buildCatalogResponseS(wh);
     // Если stats пустой, проверяем вручную
     if (stats.empty()) {
         std::cout << "DEBUG: stats пустой. Проверяем секции склада..." << std::endl;
@@ -40,7 +64,9 @@ std::string buildCatalogResponse(Warehouse* wh)
         for (const auto& section : sections) {
             std::cout << "DEBUG: Секция: " << section->getName() << std::endl;
             // Здесь нужно получить товары секции
+            cout << section->getCurrentLoad() << "\n";
         }
+        
     }
     
     std::string response = "=== КАТАЛОГ ТОВАРОВ ===\n\n";
@@ -353,7 +379,7 @@ static Product* generateRandomProductEx(
     // Генерация количества в заданном диапазоне
     int quantity = minQuantity + std::rand() % (maxQuantity - minQuantity + 1);
     
-    float dimensions = IDGenerator::genDimensions();
+    float dimensions = 1;//IDGenerator::genDimensions();
     std::string fabricator = company;
     int serial_num = IDGenerator::genSerialNumber();
     time_t warranty_date = IDGenerator::genWarrantyDate();
@@ -367,7 +393,7 @@ static Product* generateRandomProductEx(
 }
 
 void initialization(){
-    g_shop = new Shop("Магазин", 100);
+    g_shop = new Shop("Магазин", 1000);
     cout << "initialization\n";
     Seller* seller = new Seller("Яковлев Ярослав", g_shop);
     for (int i = 0; i< 25; i++){

@@ -92,7 +92,7 @@ private:
 	float price;
 	int quantity;
 	std::string category;
-	float dimensions;
+	int dimensions;
 	Prod_info* special_info;
 	SupplierInfo* manufacturer;
 	std::mutex mtx;
@@ -102,7 +102,7 @@ public:
 		std::string name, 
 		float price, int quantity, 
 		std::string category, 
-		float dimensions, 
+		int dimensions, 
 		std::string fabricator, 
 		int serial_num, 
 		time_t warrantydate, 
@@ -132,8 +132,8 @@ class Shelf {
 private:
 	int shelf_id;
 	std::string number;
-	float capacity = 5;
-	float currentWeight;
+	int capacity;
+	int currentWeight;
 	Section* section;
 	std::map<std::string, int> categoryQuantities;
 	std::vector<Product*> products;
@@ -142,7 +142,7 @@ public:
 	//============================Конструктор================================
 	Shelf(
 		std::string number, 
-		float capacity, 
+		int capacity, 
 		Section* section);
 	~Shelf();
 
@@ -152,11 +152,11 @@ public:
 	void removeProduct(Product* product);
 	bool removeProduct(Product* product, int quantity); // перегруженная версия
 	void getProductsInfo();
-	float getFreeSpace() const { return capacity - currentWeight; }
-	float getCurrentWeight() const { return currentWeight; }
+	int getFreeSpace() const { return capacity - currentWeight; }
+	int getCurrentWeight() const { return currentWeight; }
 	std::string getNumber() const { return number; }
 	int getShelf_id() const { return shelf_id; }
-	float getCapacity() const { return capacity; }
+	int getCapacity() const { return capacity; }
 	void updateWeight();
 	bool writeOffProduct(Product* product);
 	int getProductCountByType(std::string category);
@@ -181,8 +181,8 @@ class Section {
 private:
 	int section_id;
 	std::string name;
-	float capacity = 20;
-	float currentLoad;
+	int capacity;
+	int currentLoad;
 	std::map<std::string, int> categoryQuantities;
 	std::vector<Shelf*> shelves;
 	Warehouse* warehouse;
@@ -191,7 +191,7 @@ public:
 	//============================Конструктор================================
 	Section(
 		std::string name, 
-		float capacity, 
+		int capacity, 
 		Warehouse* warehouse
 	);
 	~Section();
@@ -214,8 +214,8 @@ public:
 	//======Геттреы========
 	int getSectionId() const { return section_id; }
 	std::string getName() const { return name; }
-	float getCapacity() const { return capacity; }
-	float getCurrentLoad() const { return currentLoad; }
+	int getCapacity() const { return capacity; }
+	int getCurrentLoad() const { return currentLoad; }
 	const std::map<std::string, int>& getCategoryQuantities() const { return categoryQuantities; }
 	const std::vector<Shelf*>& getShelvesList() const { return shelves; }
 };
@@ -236,8 +236,8 @@ public:
 	void addSection(std::string name, float capacity);
 	void removeSection(Section* section);
 	void getSections(); 
-	float getTotalLoad();
-	float getFreeSpace() { return totalCapacity - getTotalLoad(); };
+	int getTotalLoad();
+	int getFreeSpace() { return totalCapacity - getTotalLoad(); };
 	void updateGlobalCategoryStatistics();
 	const std::map<std::string, int>& getGlobalCategoryStatistics(){return categoryQuantities;}
 	int getGlobalCategoryCount(const std::string& category);

@@ -33,7 +33,7 @@ Product::Product(
 	std::string name, 
 	float price,	int quantity, 
 	std::string category, 
-	float dimensions, 
+	int dimensions, 
 	std::string fabricator, 
 	int serial_num, 
 	time_t warranty_date, 
@@ -117,7 +117,7 @@ std::string Product::getCategory()
 //============================Shelf============================================
 Shelf::Shelf(
 	std::string number, 
-	float capacity, 
+	int capacity, 
 	Section* section) 
 	:
 	shelf_id(IDGenerator::genShelfID()),
@@ -172,16 +172,33 @@ Shelf::~Shelf()
 
 void Shelf::addProduct(Product* product)
 {
-	if (product == nullptr) {
-		return;
-	}
-	if (getFreeSpace() < product->getDimensions()) {
-		return;
-	}
-	products.push_back(product);
-	std::string category = product->getCategory();
-	categoryQuantities[category]++;
-	countCategories();
+    if (product == nullptr) {
+        std::cout << "DEBUG: Попытка добавить nullptr в полку!" << std::endl;
+        return;
+    }
+    
+    std::cout << "DEBUG: Добавляю товар '" << product->getName() 
+              << "' на полку '" << number << "'..." << std::endl;
+    std::cout << "DEBUG: Свободное место на полке: " << getFreeSpace() 
+              << ", размер товара: " << product->getDimensions() << std::endl;
+    
+    // ИСПРАВЬТЕ: Сравнивайте с размером товара
+    if (getFreeSpace() < product->getDimensions()) {
+        std::cout << "DEBUG: Недостаточно места на полке! Нужно: " 
+                  << product->getDimensions() << ", есть: " << getFreeSpace() << std::endl;
+        return;
+    }
+    
+    products.push_back(product);
+    std::string category = product->getCategory();
+    categoryQuantities[category]++;
+    currentWeight += product->getDimensions();  // Увеличиваем на размер товара
+    
+    countCategories();
+    
+    std::cout << "DEBUG: Товар добавлен. Теперь на полке: " 
+              << products.size() << " товаров, текущий вес: " << currentWeight
+              << ", категория '" << category << "': " << categoryQuantities[category] << " шт." << std::endl;
 }
 void Shelf::addProduct(Product* product, int quantity)
 {
@@ -363,7 +380,7 @@ void Shelf::countCategories()
 //============================Section============================================
 Section::Section( 
 	std::string name, 
-	float capacity, 
+	int capacity, 
 	Warehouse* warehouse)
 	:
 	section_id(IDGenerator::genShelfID()),
@@ -419,20 +436,32 @@ bool Section::addProductS(Product *product)
     if (product == nullptr)
         return false;
 
+    std::cout << "DEBUG: Пытаюсь добавить товар '" << product->getName() 
+              << "' в секцию '" << name << "'..." << std::endl;
+    
     for (size_t i = 0; i < shelves.size(); i++)
     {
-        if (!shelves[i]->getFreeSpace() > 0 )   // полка свободна
+        // ИСПРАВЬТЕ ЭТУ ОШИБКУ: неправильное условие!
+        // Было: if (!shelves[i]->getFreeSpace() > 0 )
+        // Должно быть:
+        if (shelves[i]->getFreeSpace() > 0)   // полка свободна
         {
+            std::cout << "DEBUG: Найдена свободная полка " << i 
+                      << " (свободно: " << shelves[i]->getFreeSpace() << ")" << std::endl;
+            
             shelves[i]->addProduct(product);	
-			updateCategoryStatistics();
-			calculateCurrentLoad();
+            updateCategoryStatistics();
+            calculateCurrentLoad();
+            
+            std::cout << "DEBUG: Товар добавлен на полку " << i << std::endl;
             return true;
         }
     }
+    
     // все полки заняты
+    std::cout << "DEBUG: Все полки в секции '" << name << "' заняты!" << std::endl;
     return false;
 }
-
 void Section::addShelf(std::string name, float capacity)
 {
 	for (Shelf* existingShelf : shelves) {
@@ -498,7 +527,7 @@ void Section::getShelves()
 
 void Section::calculateCurrentLoad()
 {
-	currentLoad = 0.0f;
+	currentLoad = 0.0;
 	for (Shelf* shelf : shelves) {
 		if (shelf != nullptr) {
 			currentLoad += shelf->getCurrentWeight();
@@ -706,9 +735,9 @@ void Warehouse::getSections()
     }
 }
 
-float Warehouse::getTotalLoad()
+int Warehouse::getTotalLoad()
 {
-	float totalLoad = 0.0f;
+	int totalLoad = 0;
 	for (Section* section : sections) {
 		if (section != nullptr) {
 			totalLoad += section->getCurrentLoad();
@@ -814,12 +843,16 @@ bool Warehouse::addProduct(Product *product)
 	}
 	for (size_t i = 0; i < sections.size(); i++)
     {
-        if (sections[i]->addProductS(product))
+       if (sections[i]->addProductS(product))
         {
-			getGlobalCategoryStatistics();
+            updateGlobalCategoryStatistics();
+            
+            std::cout << "DEBUG: Товар добавлен в секцию " << i 
+                      << ". Обновлена статистика." << std::endl;
             return true; // товар успешно добавлен
         }
     }
+	
 	// все секции заполнены
     return false;
 }
