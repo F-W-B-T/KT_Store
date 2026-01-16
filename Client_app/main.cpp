@@ -3,6 +3,10 @@
 #include <windows.h>
 #include <iostream>
 #include <string>
+#include <sstream>   // ← ВОТ ЭТОГО НЕ ХВАТАЛО
+#include <map>
+
+
 
 //cd .\Client_App //для запуска клиента
 //.\ClientApp.exe
@@ -10,6 +14,79 @@
 #pragma comment(lib, "ws2_32.lib")
 
 using namespace std;
+
+struct CartItem{
+    int quantity;
+};
+
+std::map<std::string, CartItem> cart; // category -> quantity
+
+//функции корзины:
+void addToCart(const std::string& category, int quantity){
+    cart[category].quantity += quantity;
+}
+
+void removeFromCart(const std::string& category, int quantity){
+    auto it = cart.find(category);
+    if (it == cart.end())
+        return;
+
+    it->second.quantity -= quantity;
+    if (it->second.quantity <= 0)
+        cart.erase(it);
+}
+
+void printCart(){
+    if (cart.empty())
+    {
+        cout << "Корзина пуста\n";
+        return;
+    }
+
+    cout << "Корзина:\n";
+    for (const auto& [category, item] : cart)
+    {
+        cout << category << " - " << item.quantity << "\n";
+    }
+}
+
+//команды на сервер:
+std::string buildBuyCommand(){
+    std::string cmd = "купить\n";
+    for (const auto& [category, item] : cart)
+    {
+        cmd += category + " - " + std::to_string(item.quantity) + "\n";
+    }
+    return cmd;
+}
+
+void buy(){
+    if (cart.empty())
+    {
+        cout << "Корзина пуста\n";
+        return;
+    }
+
+    std::string cmd = buildBuyCommand();
+    SendMessage(cmd);
+
+    std::string response = ReceiveResponse();
+    cout << "Чек:\n" << response << endl;
+
+    cart.clear(); // очистка после успешной покупки
+}
+
+//помощь для клиента
+void printHelp(){
+    cout <<
+        "Доступные команды:\n"
+        "каталог                - показать каталог\n"
+        "добавить <кат> <n>     - добавить в корзину\n"
+        "удалить <кат> <n>      - удалить из корзины\n"
+        "корзина                - показать корзину\n"
+        "купить                 - оформить покупку\n"
+        "выход                  - выйти\n";
+}
 
 
 // Глобальный сокет клиента
@@ -88,10 +165,57 @@ int main()
     if (!ServerConnect("127.0.0.1", 54000))
         return 1;
 
-    // Пример общения
-    SendMessage("LIST");
-    string response = ReceiveResponse();
-    cout << "Ответ сервера: " << response << endl;
+    printHelp();
+
+    while (true)
+    {
+        cout << "> ";
+        std::string command;
+        std::getline(cin, command);
+
+        if (command == "выход")
+        {
+            SendMessage("выход");
+            break;
+        }
+        else if (command == "помощь")
+        {
+            printHelp();
+        }
+        else if (command == "каталог")
+        {
+            SendMessage("каталог");
+            cout << ReceiveResponse() << endl;
+        }
+        else if (command == "корзина")
+        {
+            printCart();
+        }
+        else if (command == "купить")
+        {
+            buy();
+        }
+        else if (command.rfind("добавить", 0) == 0)
+        {
+            std::string cat;
+            int qty;
+            std::string cmd;
+            std::stringstream ss(command);
+            ss >> cmd >> cat >> qty;
+        }
+        else if (command.rfind("удалить", 0) == 0)
+        {
+            std::string cat;
+            int qty;
+            std::string cmd;
+            std::stringstream ss(command);
+            ss >> cmd >> cat >> qty;
+        }
+        else
+        {
+            cout << "Неизвестная команда\n";
+        }
+    }
 
     ServerClose();
     return 0;
