@@ -1,4 +1,5 @@
 #include <iostream>
+#include <sstream>
 #include <string>
 #include <winsock2.h>
 #include <ws2tcpip.h>
@@ -241,8 +242,8 @@ void RunServer()
 
 // Массивы данных
 static const std::vector<std::string> CATEGORIES = {
-    "телефон", "ноутбук", "клавиатура", "мышь", "монитор", 
-    "наушники", "планшет", "роутер", "флешка", "мышь"
+    "phone", "laptop", "keyboard", "mouse", "monitor", 
+    "headphones", "tablet", "router", "flash drive", "webcam"
 };
 
 static const std::vector<std::string> COMPANY_NAMES = {

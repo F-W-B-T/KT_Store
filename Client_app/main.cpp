@@ -3,12 +3,12 @@
 #include <windows.h>
 #include <iostream>
 #include <string>
-#include <sstream>   // ← ВОТ ЭТОГО НЕ ХВАТАЛО
+#include <sstream>
 #include <map>
 
 
-
-//cd .\Client_App //для запуска клиента
+//для запуска клиента
+//cd .\Client_App 
 //.\ClientApp.exe
 
 #pragma comment(lib, "ws2_32.lib")
@@ -55,8 +55,9 @@ std::string buildBuyCommand(){
     std::string cmd = "купить\n";
     for (const auto& [category, item] : cart)
     {
-        cmd += category + " - " + std::to_string(item.quantity) + "\n";
+        cmd += category + " " + std::to_string(item.quantity) + "\n";
     }
+    cmd += "END\n";
     return cmd;
 }
 
@@ -80,12 +81,12 @@ void buy(){
 void printHelp(){
     cout <<
         "Доступные команды:\n"
-        "каталог                - показать каталог\n"
-        "добавить <кат> <n>     - добавить в корзину\n"
-        "удалить <кат> <n>      - удалить из корзины\n"
-        "корзина                - показать корзину\n"
-        "купить                 - оформить покупку\n"
-        "выход                  - выйти\n";
+        "catalog                - показать каталог\n"
+        "add <кат> <n>          - add в корзину\n"
+        "delete <кат> <n>       - удалить из корзины\n"
+        "crate                  - показать корзину\n"
+        "buy                 - оформить покупку\n"
+        "exit                  - выйти\n";
 }
 
 
@@ -166,6 +167,8 @@ int main()
         return 1;
 
     printHelp();
+    
+    cout << "Введите команду (помощь — список команд)\n";
 
     while (true)
     {
@@ -173,50 +176,71 @@ int main()
         std::string command;
         std::getline(cin, command);
 
-        if (command == "выход")
+        std::stringstream ss(command);
+        std::string cmd;
+        ss >> cmd;
+
+        // ===== ВЫХОД =====
+        if (cmd == "exit")
         {
-            SendMessage("выход");
+            SendMessage("exit");
             break;
         }
-        else if (command == "помощь")
-        {
-            printHelp();
-        }
-        else if (command == "каталог")
+
+        // ===== КАТАЛОГ (СЕРВЕР) =====
+        if (cmd == "catalog")
         {
             SendMessage("каталог");
             cout << ReceiveResponse() << endl;
+            continue;
         }
-        else if (command == "корзина")
+
+        // ===== КОРЗИНА (ЛОКАЛЬНО) =====
+        if (cmd == "crate")
         {
             printCart();
+            continue;
         }
-        else if (command == "купить")
+
+        // ===== ДОБАВИТЬ =====
+        if (cmd == "add")
+        {
+            std::string category;
+            int quantity;
+
+            if (ss >> category >> quantity)
+                addToCart(category, quantity);
+            else
+                cout << "Формат: добавить <категория> <кол-во>\n";
+
+            continue;
+        }
+
+        // ===== УДАЛИТЬ =====
+        if (cmd == "delete")
+        {
+            std::string category;
+            int quantity;
+
+            if (ss >> category >> quantity)
+                removeFromCart(category, quantity);
+            else
+                cout << "Формат: удалить <категория> <кол-во>\n";
+
+            continue;
+        }
+
+        // ===== КУПИТЬ =====
+        if (cmd == "buy")
         {
             buy();
+            continue;
         }
-        else if (command.rfind("добавить", 0) == 0)
-        {
-            std::string cat;
-            int qty;
-            std::string cmd;
-            std::stringstream ss(command);
-            ss >> cmd >> cat >> qty;
-        }
-        else if (command.rfind("удалить", 0) == 0)
-        {
-            std::string cat;
-            int qty;
-            std::string cmd;
-            std::stringstream ss(command);
-            ss >> cmd >> cat >> qty;
-        }
-        else
-        {
-            cout << "Неизвестная команда\n";
-        }
-    }
 
+        // ===== НЕИЗВЕСТНО =====
+        cout << "Неизвестная команда. Введите 'помощь'\n";
+    }
     ServerClose();
     return 0;
 }
+
