@@ -4,7 +4,7 @@
 #include <iostream>
 #include <string>
 
-//cd .\Client_App
+//cd .\Client_App //для запуска клиента
 //.\ClientApp.exe
 
 #pragma comment(lib, "ws2_32.lib")
