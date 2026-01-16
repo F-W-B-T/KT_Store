@@ -16,16 +16,46 @@ Shop* g_shop = nullptr;
 //функции сервера:
 std::string buildCatalogResponse(Warehouse* wh)
 {
-    std::string response = "КАТАЛОГ\n";
-
-    const auto& stats = wh->getGlobalCategoryStatistics();
-
-    for (const auto& pair : stats)
-    {
-        response += pair.first + " - " + std::to_string(pair.second) + "\n";
+    // Проверка на nullptr
+    if (wh == nullptr) {
+        std::cerr << "ОШИБКА: Warehouse* равен nullptr!" << std::endl;
+        return "ОШИБКА: Склад недоступен\nEND\n";
     }
-
-    response += "END\n";
+    
+    std::cout << "DEBUG: Получаем статистику категорий..." << std::endl;
+    
+    // Получаем статистику
+    const std::map<std::string, int>& stats = wh->getGlobalCategoryStatistics();
+    
+    std::cout << "DEBUG: Размер stats: " << stats.size() << std::endl;
+    
+    // Если stats пустой, проверяем вручную
+    if (stats.empty()) {
+        std::cout << "DEBUG: stats пустой. Проверяем секции склада..." << std::endl;
+        
+        // Проверяем секции склада
+        const auto& sections = wh->getSectionsList();
+        std::cout << "DEBUG: Количество секций: " << sections.size() << std::endl;
+        
+        for (const auto& section : sections) {
+            std::cout << "DEBUG: Секция: " << section->getName() << std::endl;
+            // Здесь нужно получить товары секции
+        }
+    }
+    
+    std::string response = "=== КАТАЛОГ ТОВАРОВ ===\n\n";
+    
+    if (stats.empty()) {
+        response += "Каталог пуст или статистика не обновлена\n";
+    } else {
+        // Выводим все категории
+        for (const auto& [category, quantity] : stats) {
+            std::cout << "DEBUG: Категория: " << category << " = " << quantity << std::endl;
+            response += category + " - " + std::to_string(quantity) + " шт.\n";
+        }
+    }
+    
+    response += "\n=====================\nEND\n";
     return response;
 }
 
@@ -48,7 +78,7 @@ std::string buildHelpResponse()
 DWORD WINAPI HandleClient(LPVOID lpParam)
 {
     SOCKET clientSocket = (SOCKET)lpParam;
-    char buffer[512];
+    char buffer[1024];  // Увеличиваем буфер
 
     cout << "Поток клиента запущен\n";
 
@@ -63,28 +93,42 @@ DWORD WINAPI HandleClient(LPVOID lpParam)
         }
 
         buffer[bytesReceived] = '\0';
-        cout << "Получено от клиента: " << buffer << endl;
+        std::string receivedMsg(buffer);
+        cout << "Получено от клиента: " << receivedMsg << endl;
+
+        if (receivedMsg.find("exit") == 0)
+        {
+            cout << "Клиент запросил отключение\n";
+            break;
+        }
 
         // ================== ПОМОЩЬ ==================
-        if (strcmp(buffer, "помощь") == 0){
+        if (receivedMsg.find("помощь") == 0){
             std::string response = buildHelpResponse();
             send(clientSocket, response.c_str(), response.size(), 0);
             continue;
         }
 
         // ================== КАТАЛОГ ==================
-        if (strcmp(buffer, "каталог") == 0)
-        {
-            std::string response =
-                buildCatalogResponse(g_shop->getWarehouse());
-
+        if (receivedMsg.find("каталог") == 0)
+        {   
+            cout << "Отправляю каталог\n";
+            std::string response = buildCatalogResponse(g_shop->getWarehouse());
             send(clientSocket, response.c_str(), response.size(), 0);
+            cout << "Каталог отправлен\n";
             continue;
         }
 
         // ================== ПОКУПКА ==================
-        if (strcmp(buffer, "купить") == 0)
+        if (receivedMsg.find("купить") == 0)
         {
+            // Разбиваем полученное сообщение на строки
+            std::istringstream stream(receivedMsg);
+            std::string line;
+            
+            // Пропускаем первую строку "купить"
+            std::getline(stream, line);
+            
             Check* check = new Check(
                 g_shop->getSeller(),
                 nullptr,
@@ -94,19 +138,25 @@ DWORD WINAPI HandleClient(LPVOID lpParam)
 
             bool error = false;
 
-            while (true)
+            while (std::getline(stream, line))
             {
-                int bytes = recv(clientSocket, buffer, sizeof(buffer) - 1, 0);
-                buffer[bytes] = '\0';
-
-                if (strcmp(buffer, "END") == 0)
+                if (line.empty()) continue;  // Пропускаем пустые строки
+                
+                // Удаляем возможные символы возврата каретки
+                if (!line.empty() && line.back() == '\r') {
+                    line.pop_back();
+                }
+                
+                if (line == "END")
                     break;
 
                 std::string category;
                 int quantity;
 
-                std::stringstream ss(buffer);
+                std::stringstream ss(line);
                 ss >> category >> quantity;
+
+                if (category.empty() || quantity <= 0) continue;
 
                 bool ok = g_shop->getWarehouse()
                     ->removeProductsByCategory(category, quantity, check);
@@ -123,20 +173,28 @@ DWORD WINAPI HandleClient(LPVOID lpParam)
                 check->returnProductsToStock();
                 delete check;
 
-                std::string err =
-                    "ОШИБКА: недостаточно товара\n";
+                std::string err = "ОШИБКА: недостаточно товара\n";
                 send(clientSocket, err.c_str(), err.size(), 0);
                 continue;
             }
 
             check->calculateTotal();
 
+            // Создаем строку для чека
             std::ostringstream out;
             out << "ЧЕК\n";
-            check->printCheck(); // если печатает в cout — допустимо
-
-            std::string done = "ПОКУПКА ЗАВЕРШЕНА\n";
-            send(clientSocket, done.c_str(), done.size(), 0);
+            
+            // Если check->printCheck() печатает в cout, нужно переделать
+            // Предположим, что есть метод, возвращающий строку
+            // Или создаем свой вывод
+            // Например:
+            out << "Покупка завершена. Товары:\n";
+            // ... добавьте логику формирования чека ...
+            
+            std::string response = out.str() + "ПОКУПКА ЗАВЕРШЕНА\n";
+            send(clientSocket, response.c_str(), response.size(), 0);
+            
+            delete check;  // Не забываем удалить чек после использования
             continue;
         }
 
@@ -147,7 +205,6 @@ DWORD WINAPI HandleClient(LPVOID lpParam)
     closesocket(clientSocket);
     return 0;
 }
-
 
 void RunServer()
 {
@@ -311,9 +368,10 @@ static Product* generateRandomProductEx(
 
 void initialization(){
     g_shop = new Shop("Магазин", 100);
-
+    cout << "initialization\n";
     Seller* seller = new Seller("Яковлев Ярослав", g_shop);
     for (int i = 0; i< 25; i++){
+        cout << "create new product" << i <<"\n";
         g_shop->addProductToWarehouse(generateRandomProductEx());
     }
 }

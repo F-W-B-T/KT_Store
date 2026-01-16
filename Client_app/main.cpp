@@ -8,6 +8,13 @@
 #include <locale>
 #include <codecvt>
 
+//для запуска
+//cd Client_app
+// ./ClientApp.exe
+
+//для компиляции
+//cl.exe /std:c++17 /EHsc main.cpp ws2_32.lib /FeClientApp.exe
+
 #pragma comment(lib, "ws2_32.lib")
 
 using namespace std;

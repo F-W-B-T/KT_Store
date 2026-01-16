@@ -181,6 +181,7 @@ void Shelf::addProduct(Product* product)
 	products.push_back(product);
 	std::string category = product->getCategory();
 	categoryQuantities[category]++;
+	countCategories();
 }
 void Shelf::addProduct(Product* product, int quantity)
 {
@@ -422,7 +423,9 @@ bool Section::addProductS(Product *product)
     {
         if (!shelves[i]->getFreeSpace() > 0 )   // полка свободна
         {
-            shelves[i]->addProduct(product);
+            shelves[i]->addProduct(product);	
+			updateCategoryStatistics();
+			calculateCurrentLoad();
             return true;
         }
     }
@@ -813,6 +816,7 @@ bool Warehouse::addProduct(Product *product)
     {
         if (sections[i]->addProductS(product))
         {
+			getGlobalCategoryStatistics();
             return true; // товар успешно добавлен
         }
     }
