@@ -5,11 +5,8 @@
 #include <string>
 #include <sstream>
 #include <map>
-
-
-//для запуска клиента
-//cd .\Client_App 
-//.\ClientApp.exe
+#include <locale>
+#include <codecvt>
 
 #pragma comment(lib, "ws2_32.lib")
 
@@ -19,9 +16,24 @@ struct CartItem{
     int quantity;
 };
 
-std::map<std::string, CartItem> cart; // category -> quantity
+std::map<std::string, CartItem> cart;
 
-//функции корзины:
+// ПРОТОТИПЫ ВСЕХ ФУНКЦИЙ
+bool ServerConnect(const string& ip, int port);
+bool SendToServer(const string& message);
+string ReceiveFromServer();
+void ServerClose();
+void printHelp();
+void addToCart(const std::string& category, int quantity);
+void removeFromCart(const std::string& category, int quantity);
+void printCart();
+std::string buildBuyCommand();
+void buy();
+
+SOCKET clientSocket = INVALID_SOCKET;
+
+// ========== РЕАЛИЗАЦИИ ФУНКЦИЙ ==========
+
 void addToCart(const std::string& category, int quantity){
     cart[category].quantity += quantity;
 }
@@ -50,7 +62,6 @@ void printCart(){
     }
 }
 
-//команды на сервер:
 std::string buildBuyCommand(){
     std::string cmd = "купить\n";
     for (const auto& [category, item] : cart)
@@ -69,29 +80,24 @@ void buy(){
     }
 
     std::string cmd = buildBuyCommand();
-    SendMessage(cmd);
+    SendToServer(cmd);
 
-    std::string response = ReceiveResponse();
+    std::string response = ReceiveFromServer();
     cout << "Чек:\n" << response << endl;
 
-    cart.clear(); // очистка после успешной покупки
+    cart.clear();
 }
 
-//помощь для клиента
 void printHelp(){
     cout <<
         "Доступные команды:\n"
         "catalog                - показать каталог\n"
-        "add <кат> <n>          - add в корзину\n"
+        "add <кат> <n>          - добавить в корзину\n"
         "delete <кат> <n>       - удалить из корзины\n"
         "crate                  - показать корзину\n"
-        "buy                 - оформить покупку\n"
-        "exit                  - выйти\n";
+        "buy                    - оформить покупку\n"
+        "exit                   - выйти\n";
 }
-
-
-// Глобальный сокет клиента
-SOCKET clientSocket = INVALID_SOCKET;
 
 bool ServerConnect(const string& ip, int port)
 {
@@ -127,7 +133,7 @@ bool ServerConnect(const string& ip, int port)
     return true;
 }
 
-bool SendMessage(const string& message)
+bool SendToServer(const string& message)
 {
     if (clientSocket == INVALID_SOCKET)
         return false;
@@ -136,7 +142,7 @@ bool SendMessage(const string& message)
     return result != SOCKET_ERROR;
 }
 
-string ReceiveResponse()
+string ReceiveFromServer()
 {
     char buffer[512];
     int bytesReceived = recv(clientSocket, buffer, sizeof(buffer) - 1, 0);
@@ -160,8 +166,11 @@ void ServerClose()
 
 int main()
 {
-    setlocale(LC_ALL, ".UTF8");
-    SetConsoleOutputCP(65001);
+// Включаем поддержку UTF-8 в консоли Windows
+    system("chcp 65001 > nul");  // Устанавливаем UTF-8
+    
+    // Настройка локали
+    setlocale(LC_ALL, "ru_RU.UTF-8");
 
     if (!ServerConnect("127.0.0.1", 54000))
         return 1;
@@ -180,30 +189,21 @@ int main()
         std::string cmd;
         ss >> cmd;
 
-        // ===== ВЫХОД =====
         if (cmd == "exit")
         {
-            SendMessage("exit");
+            SendToServer("exit");
             break;
         }
-
-        // ===== КАТАЛОГ (СЕРВЕР) =====
-        if (cmd == "catalog")
+        else if (cmd == "catalog")
         {
-            SendMessage("каталог");
-            cout << ReceiveResponse() << endl;
-            continue;
+            SendToServer("каталог");
+            cout << ReceiveFromServer() << endl;
         }
-
-        // ===== КОРЗИНА (ЛОКАЛЬНО) =====
-        if (cmd == "crate")
+        else if (cmd == "crate")
         {
             printCart();
-            continue;
         }
-
-        // ===== ДОБАВИТЬ =====
-        if (cmd == "add")
+        else if (cmd == "add")
         {
             std::string category;
             int quantity;
@@ -212,12 +212,8 @@ int main()
                 addToCart(category, quantity);
             else
                 cout << "Формат: добавить <категория> <кол-во>\n";
-
-            continue;
         }
-
-        // ===== УДАЛИТЬ =====
-        if (cmd == "delete")
+        else if (cmd == "delete")
         {
             std::string category;
             int quantity;
@@ -226,21 +222,21 @@ int main()
                 removeFromCart(category, quantity);
             else
                 cout << "Формат: удалить <категория> <кол-во>\n";
-
-            continue;
         }
-
-        // ===== КУПИТЬ =====
-        if (cmd == "buy")
+        else if (cmd == "buy")
         {
             buy();
-            continue;
         }
-
-        // ===== НЕИЗВЕСТНО =====
-        cout << "Неизвестная команда. Введите 'помощь'\n";
+        else if (cmd == "help" || cmd == "помощь")
+        {
+            printHelp();
+        }
+        else
+        {
+            cout << "Неизвестная команда. Введите 'help'\n";
+        }
     }
+    
     ServerClose();
     return 0;
 }
-
